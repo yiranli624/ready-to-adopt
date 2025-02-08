@@ -9,108 +9,43 @@ import {
   DropdownTrigger
 } from "@heroui/react";
 import React, { useEffect, useState } from "react";
-type Dog = {
-  id: string;
-  img: string;
-  name: string;
-  age: number;
-  zip_code: string;
-  breed: string;
-};
+import { Dog, getDogs, getDogsWithSort } from "@/apiCalls";
+
 const BASE_URL = "https://frontend-take-home-service.fetch.com";
 export default function DogsHomePage() {
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [totalDogs, setTotalDogs] = useState<number | null>(null);
   const [isLoadingDogs, setIsLoadingDogs] = useState(true);
   const [nextFetchUrl, setNextFetchUrl] = useState("");
+  const [dogsBreeds, getDogsBreeds] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch(`${BASE_URL}/dogs/search?sort=breed:asc`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "include"
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setTotalDogs(data.total);
-        setNextFetchUrl(`${BASE_URL}${data.next}`);
-
-        fetch(`${BASE_URL}/dogs`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(data.resultIds),
-          credentials: "include"
-        })
-          .then((res) => res.json())
-          .then((data: Dog[]) => {
-            setDogs(data);
-            setIsLoadingDogs(false);
-          });
-      });
+    getDogsWithSort().then((data) => {
+      setTotalDogs(data.total);
+      setNextFetchUrl(data.next);
+      setDogs(data.dogs);
+      setIsLoadingDogs(false);
+    });
   }, []);
 
-  const getNextPage = () => {
-    fetch(nextFetchUrl, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "include"
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setNextFetchUrl(`${BASE_URL}${data.next}`);
-        fetch(`${BASE_URL}/dogs`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(data.resultIds),
-          credentials: "include"
-        })
-          .then((res) => res.json())
-          .then((data: Dog[]) => {
-            // data.sort((a, b) => a.breed.localeCompare(b.breed));
-            setDogs(data);
-            setIsLoadingDogs(false);
-          });
-      });
+  const getNextPage = async () => {
+    console.log(nextFetchUrl);
+    setIsLoadingDogs(true);
+    const dogsData = await getDogs(nextFetchUrl);
+    setDogs(dogsData.dogs);
+    setNextFetchUrl(dogsData.next);
+    setIsLoadingDogs(false);
   };
 
-  const sortDogsList = (
+  const sortDogsList = async (
     field: "breed" | "name" | "age",
     order: "asc" | "desc"
   ) => {
-    fetch(`${BASE_URL}/dogs/search?sort=${field}:${order}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "include"
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setTotalDogs(data.total);
-        setNextFetchUrl(`${BASE_URL}${data.next}`);
-
-        fetch(`${BASE_URL}/dogs`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(data.resultIds),
-          credentials: "include"
-        })
-          .then((res) => res.json())
-          .then((data: Dog[]) => {
-            setDogs(data);
-            setIsLoadingDogs(false);
-          });
-      });
+    setIsLoadingDogs(true);
+    const dogsData = await getDogsWithSort({ field, order });
+    setDogs(dogsData.dogs);
+    setNextFetchUrl(dogsData.next);
+    setIsLoadingDogs(false);
   };
 
   return (
@@ -122,89 +57,78 @@ export default function DogsHomePage() {
         </div>
       </div>
       {isLoadingDogs && <div>loading...</div>}
-      {!isLoadingDogs && (
-        <div className='px-20'>
-          <div className='h-20 p-8 border-b-4 text-center text-stone-700'>
-            Total Available {totalDogs}
-          </div>
-          <div className='flex gap-6 py-6 border-b-4'>
-            <Dropdown>
-              <DropdownTrigger>
-                <Button
-                  className='capitalize'
-                  color='primary'
-                  variant='bordered'
-                >
-                  Any Breed
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                aria-label='Dropdown Variants'
-                color='default'
-                variant='bordered'
-              >
-                <DropdownItem key='new'>New file</DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
 
-            <Dropdown>
-              <DropdownTrigger>
-                <Button
-                  className='capitalize'
-                  color='primary'
-                  variant='bordered'
-                >
-                  Any Location
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                aria-label='Dropdown Variants'
-                color='default'
-                variant='bordered'
-              >
-                <DropdownItem key='new'>New file</DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-          </div>
-
-          <div className='flex gap-6 py-6 text-stone-700'>
-            Sort by:
-            <button onClick={() => sortDogsList("age", "desc")}>Oldest</button>
-            <button onClick={() => sortDogsList("age", "asc")}>Youngest</button>
-            <button onClick={() => sortDogsList("breed", "asc")}>
-              Breed(a-z)
-            </button>
-            <button onClick={() => sortDogsList("breed", "desc")}>
-              Breed(z-a)
-            </button>
-          </div>
-
-          <div className='grid grid-cols-5 w-full gap-10'>
-            {dogs.map((dog) => (
-              <div key={dog.id} className='text-stone-700 border-4'>
-                <div
-                  className={`w-full h-40 bg-no-repeat bg-cover bg-center`}
-                  style={{ backgroundImage: `url('${dog.img}')` }}
-                ></div>
-                <p>{dog.name}</p>
-                <p>{dog.breed}</p>
-                <p>
-                  {dog.age > 0
-                    ? `${dog.age} years old`
-                    : "less than a year old"}
-                </p>
-                <p>Location zipcode: {dog.zip_code}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className='flex justify-center p-6'>
-            <Button color='primary' onPress={getNextPage}>
-              Next
-            </Button>
-          </div>
+      <div className='px-20'>
+        <div className='h-20 p-8 border-b-4 text-center text-stone-700'>
+          Total Available {totalDogs}
         </div>
-      )}
+        <div className='flex gap-6 py-6 border-b-4'>
+          <Dropdown>
+            <DropdownTrigger>
+              <Button className='capitalize' color='primary' variant='bordered'>
+                Any Breed
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              aria-label='Dropdown Variants'
+              color='default'
+              variant='bordered'
+            >
+              <DropdownItem key='new'>New file</DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+
+          <Dropdown>
+            <DropdownTrigger>
+              <Button className='capitalize' color='primary' variant='bordered'>
+                Any Location
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              aria-label='Dropdown Variants'
+              color='default'
+              variant='bordered'
+            >
+              <DropdownItem key='new'>New file</DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+        </div>
+
+        <div className='flex gap-6 py-6 text-stone-700'>
+          Sort by:
+          <button onClick={() => sortDogsList("age", "desc")}>Oldest</button>
+          <button onClick={() => sortDogsList("age", "asc")}>Youngest</button>
+          <button onClick={() => sortDogsList("breed", "asc")}>
+            Breed(a-z)
+          </button>
+          <button onClick={() => sortDogsList("breed", "desc")}>
+            Breed(z-a)
+          </button>
+        </div>
+
+        <div className='grid grid-cols-5 w-full gap-10'>
+          {dogs.map((dog) => (
+            <div key={dog.id} className='text-stone-700 border-4'>
+              <div
+                className={`w-full h-40 bg-no-repeat bg-cover bg-center`}
+                style={{ backgroundImage: `url('${dog.img}')` }}
+              ></div>
+              <p>{dog.name}</p>
+              <p>{dog.breed}</p>
+              <p>
+                {dog.age > 0 ? `${dog.age} years old` : "less than a year old"}
+              </p>
+              <p>Location zipcode: {dog.zip_code}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className='flex justify-center p-6'>
+          <Button color='primary' onPress={getNextPage}>
+            Next
+          </Button>
+        </div>
+      </div>
     </main>
   );
 }
