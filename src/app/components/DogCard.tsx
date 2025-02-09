@@ -13,6 +13,7 @@ export default function DogCard({
   return (
     <div
       key={dog.id}
+      data-test-id={dog.id}
       className={classNames(
         "text-stone-700 shadow-xl rounded hover:cursor-pointer hover:scale-110 ease-in-out duration-300 border-2",
         {

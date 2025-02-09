@@ -115,11 +115,15 @@ export default function DogsHomePage() {
 
   return (
     <div className='px-20'>
-      <div className='h-20 p-8 border-b-4 text-center text-stone-700 text-lg'>
+      <div
+        data-test-id='total-dogs'
+        className='h-20 p-8 border-b-4 text-center text-stone-700 text-lg'
+      >
         Total Available dogs: {totalDogs}
       </div>
       <div className='flex gap-6 py-6 border-b-4 items-center'>
         <Select
+          data-test-id='select-breed'
           className='max-w-xs'
           label='Any Breed'
           variant='bordered'
@@ -160,7 +164,10 @@ export default function DogsHomePage() {
         ))}
       </div>
 
-      <div className='grid grid-cols-5 w-full gap-10'>
+      <div
+        data-test-id='dogs-section'
+        className='grid grid-cols-5 w-full gap-10'
+      >
         {dogs.map((dog) => (
           <DogCard
             key={dog.id}

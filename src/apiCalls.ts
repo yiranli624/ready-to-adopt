@@ -132,5 +132,5 @@ export const getCityState = async (zipcode: string) => {
 
   const locations: Location[] = await locationRes.json();
 
-  return { city: locations[0].city, state: locations[0].state };
+  return { city: locations[0]?.city, state: locations[0]?.state };
 };
