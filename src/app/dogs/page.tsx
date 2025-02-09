@@ -1,16 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { Button, Select, SelectItem } from "@heroui/react";
-import React, { useEffect, useState } from "react";
-import {
-  Dog,
-  getDogs,
-  getDogsBreeds,
-  getDogsByBreed,
-  getDogsWithSort,
-  matchDogs
-} from "@/apiCalls";
+import React, { useCallback, useEffect, useState } from "react";
+import { Dog, getDogs, getDogsBreeds, searchDogs, matchDogs } from "@/apiCalls";
+import DogCard from "../components/DogCard";
 
 const SORT_TYPES: {
   name: string;
@@ -31,10 +24,12 @@ export default function DogsHomePage() {
   const [isLoadingDogs, setIsLoadingDogs] = useState(true);
   const [nextFetchUrl, setNextFetchUrl] = useState("");
   const [dogsBreeds, setDogsBreeds] = useState<string[]>([]);
+  const [selectedDogBreed, setSelectedDogBreed] = useState<string>("");
   const [selectedDogsIds, setSelectedDogsIds] = useState<string[]>([]);
+  const [foundAMatch, setFoundAMatch] = useState(false);
 
-  useEffect(() => {
-    getDogsWithSort().then((data) => {
+  const initialFetch = useCallback(() => {
+    searchDogs().then((data) => {
       setTotalDogs(data.total);
       setNextFetchUrl(data.next);
       setDogs(data.dogs);
@@ -46,20 +41,34 @@ export default function DogsHomePage() {
     });
   }, []);
 
+  useEffect(() => {
+    initialFetch();
+  }, []);
+
   const getNextPage = async () => {
     setIsLoadingDogs(true);
     const dogsData = await getDogs(nextFetchUrl);
     setDogs(dogsData.dogs);
     setNextFetchUrl(dogsData.next);
     setIsLoadingDogs(false);
+    window.scrollTo(0, 300);
   };
 
   const sortDogsList = async (
-    field: "breed" | "name" | "age",
-    order: "asc" | "desc"
+    sortField: "breed" | "name" | "age",
+    sortOrder: "asc" | "desc"
   ) => {
     setIsLoadingDogs(true);
-    const dogsData = await getDogsWithSort({ field, order });
+    let dogsData;
+    if (selectedDogBreed) {
+      dogsData = await searchDogs({
+        breeds: [selectedDogBreed],
+        sortField,
+        sortOrder
+      });
+    } else {
+      dogsData = await searchDogs({ sortField, sortOrder });
+    }
     setDogs(dogsData.dogs);
     setNextFetchUrl(dogsData.next);
     setIsLoadingDogs(false);
@@ -67,108 +76,107 @@ export default function DogsHomePage() {
 
   const handleBreedSelect = async (breed: string) => {
     setIsLoadingDogs(true);
-    const dogsData = await getDogsByBreed(breed);
+    setSelectedDogBreed(breed);
+    const dogsData = await searchDogs({ breeds: [breed] });
     setDogs(dogsData.dogs);
     setNextFetchUrl(dogsData.next);
     setTotalDogs(dogsData.total);
     setIsLoadingDogs(false);
   };
 
-  const findMatch = async () => {
-    setIsLoadingDogs(true);
-    const matchedDog = await matchDogs(selectedDogsIds);
-    setDogs(matchedDog);
-    setTotalDogs(1);
-    setIsLoadingDogs(false);
+  const handleDogSelect = (dogId: string) => {
+    const hasSelected = selectedDogsIds.some((id) => id === dogId);
+    if (hasSelected) {
+      setSelectedDogsIds((prev) => [...prev].filter((id) => id !== dogId));
+    } else {
+      setSelectedDogsIds((prev) => [...prev, dogId]);
+    }
+  };
+
+  const handleDogMatch = async () => {
+    if (foundAMatch) {
+      initialFetch();
+      setSelectedDogBreed("");
+      setSelectedDogsIds([]);
+      setFoundAMatch(false);
+    } else {
+      const matchedDog = await matchDogs(selectedDogsIds);
+      setDogs(matchedDog);
+      setTotalDogs(1);
+      setFoundAMatch((prev) => !prev);
+    }
   };
 
   return (
-    <main className='bg-stone-100 flex flex-col h-screen'>
-      <div className="flex-none h-60 bg-[url('/dog-adopt-banner.jpg')] bg-no-repeat bg-cover bg-center">
-        <div className='flex flex-col h-full gap-4 px-20 justify-center text-amber-50 text-xl'>
-          <p>ADOPTABLE DOGS</p>
-          <p className='pl-30'>Providing second chances for better lives.</p>
-        </div>
+    <div className='px-20'>
+      <div className='h-20 p-8 border-b-4 text-center text-stone-700'>
+        Total Available {totalDogs}
       </div>
-      {isLoadingDogs && <div>loading...</div>}
-
-      <div className='px-20'>
-        <div className='h-20 p-8 border-b-4 text-center text-stone-700'>
-          Total Available {totalDogs}
-        </div>
-        <div className='flex gap-6 py-6 border-b-4 items-center'>
-          <Select
-            className='max-w-xs'
-            label='Any Breed'
-            variant='bordered'
-            popoverProps={{ placement: "bottom" }}
-          >
-            {dogsBreeds.map((breed) => (
-              <SelectItem
-                key={breed}
-                className='text-stone-700'
-                onPress={() => handleBreedSelect(breed)}
-              >
-                {breed}
-              </SelectItem>
-            ))}
-          </Select>
-
-          <Button
-            size='lg'
-            className='bg-gradient-to-tr from-sky-500 to-yellow-500 text-white shadow-lg text-xl'
-            isDisabled={selectedDogsIds.length < 1}
-            onPress={findMatch}
-          >
-            Ready to match
-          </Button>
-        </div>
-
-        <div className='flex gap-6 py-6 text-stone-700'>
-          Sort by:
-          {SORT_TYPES.map((sortType) => (
-            <button
-              key={sortType.name}
-              onClick={() => sortDogsList(sortType.field, sortType.order)}
+      <div className='flex gap-6 py-6 border-b-4 items-center'>
+        <Select
+          className='max-w-xs'
+          label='Any Breed'
+          variant='bordered'
+          popoverProps={{ placement: "bottom" }}
+          selectedKeys={[selectedDogBreed]}
+        >
+          {dogsBreeds.map((breed) => (
+            <SelectItem
+              key={breed}
+              className='text-stone-700'
+              onPress={() => handleBreedSelect(breed)}
             >
-              {sortType.name}
-            </button>
+              {breed}
+            </SelectItem>
           ))}
-        </div>
+        </Select>
 
-        <div className='grid grid-cols-5 w-full gap-10'>
-          {dogs.map((dog) => (
-            <div
-              key={dog.id}
-              className='text-stone-700 border-4 hover:cursor-pointer'
-              onClick={() => {
-                setSelectedDogsIds((prev) => [...prev, dog.id]);
-              }}
-            >
-              <div
-                className={`w-full h-40 bg-no-repeat bg-cover bg-center`}
-                style={{ backgroundImage: `url('${dog.img}')` }}
-              ></div>
-              <p>{dog.name}</p>
-              <p>{dog.breed}</p>
-              <p>
-                {dog.age > 0 ? `${dog.age} years old` : "less than a year old"}
-              </p>
-              <p>Location zipcode: {dog.zip_code}</p>
-            </div>
-          ))}
-        </div>
+        <Button
+          size='lg'
+          className='bg-gradient-to-tr from-sky-500 to-yellow-500 text-white shadow-lg text-xl'
+          isDisabled={selectedDogsIds.length < 1}
+          onPress={handleDogMatch}
+        >
+          {foundAMatch ? "Try again" : "Ready to match"}
+        </Button>
+      </div>
 
-        <div className='flex justify-center p-6'>
+      <div className='flex gap-6 py-6 text-stone-700'>
+        Sort by:
+        {SORT_TYPES.map((sortType) => (
+          <button
+            key={sortType.name}
+            className='border-b-2 border-transparent hover:border-stone-300'
+            onClick={() => sortDogsList(sortType.field, sortType.order)}
+          >
+            {sortType.name}
+          </button>
+        ))}
+      </div>
+
+      <div className='grid grid-cols-5 w-full gap-10'>
+        {dogs.map((dog) => (
+          <DogCard
+            key={dog.id}
+            dog={dog}
+            isSelected={selectedDogsIds.includes(dog.id)}
+            selectDog={handleDogSelect}
+          />
+        ))}
+      </div>
+
+      <div className='flex justify-center p-10'>
+        {!foundAMatch && (
           <Button
             className='bg-gradient-to-tr from-sky-500 to-yellow-500 text-white shadow-lg'
             onPress={getNextPage}
             isDisabled={dogs.length < 1}
+            isLoading={isLoadingDogs}
           >
-            Next
+            {isLoadingDogs ? "Loading.." : "Next"}
           </Button>
-        </div>
+        )}
       </div>
-    </main>
+    </div>
   );
 }

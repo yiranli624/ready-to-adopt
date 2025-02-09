@@ -37,20 +37,22 @@ export const getDogs = async (url: string) => {
   };
 };
 
-export const getDogsWithSort = async ({
-  field = "breed",
-  order = "asc"
+export const searchDogs = async ({
+  sortField = "breed",
+  sortOrder = "asc",
+  breeds = []
 }: {
-  field?: "breed" | "name" | "age";
-  order?: "asc" | "desc";
+  sortField?: "breed" | "name" | "age";
+  sortOrder?: "asc" | "desc";
+  breeds?: string[];
 } = {}) => {
-  const url = `${BASE_URL}/dogs/search?sort=${field}:${order}`;
-  return await getDogs(url);
-};
+  const url = new URL(`${BASE_URL}/dogs/search`);
+  breeds.forEach((breed) => {
+    url.searchParams.append("breeds", breed);
+  });
+  url.searchParams.append("sort", `${sortField}:${sortOrder}`);
 
-export const getDogsByBreed = async (breed: string) => {
-  const url = `${BASE_URL}/dogs/search?breeds=${breed}`;
-  return await getDogs(url);
+  return await getDogs(url.toString());
 };
 
 export const getDogsBreeds = async () => {
