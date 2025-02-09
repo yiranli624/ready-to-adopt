@@ -1,4 +1,4 @@
-export type Dog = {
+type Dog = {
   id: string;
   img: string;
   name: string;
@@ -6,6 +6,21 @@ export type Dog = {
   zip_code: string;
   breed: string;
 };
+
+type Location = {
+  zip_code: string;
+  latitude: number;
+  longitude: number;
+  city: string;
+  state: string;
+  county: string;
+};
+
+export type FullDog = Dog & {
+  city: string;
+  state: string;
+};
+
 const BASE_URL = "https://frontend-take-home-service.fetch.com";
 
 export const getDogs = async (url: string) => {
@@ -29,9 +44,15 @@ export const getDogs = async (url: string) => {
   });
 
   const dogs: Dog[] = await dogsRes.json();
+  const dogsWithCityState: FullDog[] = await Promise.all(
+    dogs.map(async (dog) => {
+      const location = await getCityState(dog.zip_code);
+      return { ...dog, city: location.city, state: location.state };
+    })
+  );
 
   return {
-    dogs,
+    dogs: dogsWithCityState,
     total: dogsRawData.total,
     next: `${BASE_URL}${dogsRawData.next}`
   };
@@ -87,7 +108,29 @@ export const matchDogs = async (dogsIds: string[]) => {
     credentials: "include"
   });
 
-  const dog: Dog[] = await dogsRes.json();
+  const dogs: Dog[] = await dogsRes.json();
 
-  return dog;
+  const dogsWithCityState: FullDog[] = await Promise.all(
+    dogs.map(async (dog) => {
+      const location = await getCityState(dog.zip_code);
+      return { ...dog, city: location.city, state: location.state };
+    })
+  );
+
+  return dogsWithCityState[0];
+};
+
+export const getCityState = async (zipcode: string) => {
+  const locationRes = await fetch(`${BASE_URL}/locations`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify([zipcode]),
+    credentials: "include"
+  });
+
+  const locations: Location[] = await locationRes.json();
+
+  return { city: locations[0].city, state: locations[0].state };
 };

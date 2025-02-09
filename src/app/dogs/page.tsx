@@ -2,7 +2,13 @@
 
 import { Button, Select, SelectItem } from "@heroui/react";
 import React, { useCallback, useEffect, useState } from "react";
-import { Dog, getDogs, getDogsBreeds, searchDogs, matchDogs } from "@/apiCalls";
+import {
+  FullDog,
+  getDogs,
+  getDogsBreeds,
+  searchDogs,
+  matchDogs
+} from "@/apiCalls";
 import DogCard from "../components/DogCard";
 
 const SORT_TYPES: {
@@ -19,7 +25,7 @@ const SORT_TYPES: {
 ];
 
 export default function DogsHomePage() {
-  const [dogs, setDogs] = useState<Dog[]>([]);
+  const [dogs, setDogs] = useState<FullDog[]>([]);
   const [totalDogs, setTotalDogs] = useState<number | null>(null);
   const [isLoadingDogs, setIsLoadingDogs] = useState(true);
   const [nextFetchUrl, setNextFetchUrl] = useState("");
@@ -101,7 +107,7 @@ export default function DogsHomePage() {
       setFoundAMatch(false);
     } else {
       const matchedDog = await matchDogs(selectedDogsIds);
-      setDogs(matchedDog);
+      setDogs([matchedDog]);
       setTotalDogs(1);
       setFoundAMatch((prev) => !prev);
     }
@@ -109,8 +115,8 @@ export default function DogsHomePage() {
 
   return (
     <div className='px-20'>
-      <div className='h-20 p-8 border-b-4 text-center text-stone-700'>
-        Total Available {totalDogs}
+      <div className='h-20 p-8 border-b-4 text-center text-stone-700 text-lg'>
+        Total Available dogs: {totalDogs}
       </div>
       <div className='flex gap-6 py-6 border-b-4 items-center'>
         <Select

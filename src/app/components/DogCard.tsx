@@ -1,4 +1,4 @@
-import { Dog } from "@/apiCalls";
+import { FullDog } from "@/apiCalls";
 import classNames from "classnames";
 
 export default function DogCard({
@@ -6,7 +6,7 @@ export default function DogCard({
   isSelected,
   selectDog
 }: {
-  dog: Dog;
+  dog: FullDog;
   isSelected: boolean;
   selectDog: (id: string) => void;
 }) {
@@ -37,7 +37,10 @@ export default function DogCard({
       <div className='p-4'>
         <p className='font-bold'>{dog.breed}</p>
         <p>{dog.age > 0 ? `${dog.age} years old` : "less than a year old"}</p>
-        <p>Location zipcode: {dog.zip_code}</p>
+        <p>
+          {dog.city}, {dog.state}
+        </p>
+        <p>{dog.zip_code}</p>
       </div>
     </div>
   );
