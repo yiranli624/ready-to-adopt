@@ -1,23 +1,35 @@
 "use client";
 
 import Image from "next/image";
-import {
-  Button,
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownTrigger
-} from "@heroui/react";
+import { Button, Select, SelectItem } from "@heroui/react";
 import React, { useEffect, useState } from "react";
-import { Dog, getDogs, getDogsWithSort } from "@/apiCalls";
+import {
+  Dog,
+  getDogs,
+  getDogsBreeds,
+  getDogsByBreed,
+  getDogsWithSort
+} from "@/apiCalls";
 
-const BASE_URL = "https://frontend-take-home-service.fetch.com";
+const SORT_TYPES: {
+  name: string;
+  field: "breed" | "name" | "age";
+  order: "asc" | "desc";
+}[] = [
+  { name: "Oldest", field: "age", order: "desc" },
+  { name: "Youngest", field: "age", order: "asc" },
+  { name: "Breed(A-Z)", field: "breed", order: "asc" },
+  { name: "Breed(Z-A)", field: "breed", order: "desc" },
+  { name: "Name(A-Z)", field: "name", order: "asc" },
+  { name: "Name(Z-A)", field: "name", order: "desc" }
+];
+
 export default function DogsHomePage() {
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [totalDogs, setTotalDogs] = useState<number | null>(null);
   const [isLoadingDogs, setIsLoadingDogs] = useState(true);
   const [nextFetchUrl, setNextFetchUrl] = useState("");
-  const [dogsBreeds, getDogsBreeds] = useState<string[]>([]);
+  const [dogsBreeds, setDogsBreeds] = useState<string[]>([]);
 
   useEffect(() => {
     getDogsWithSort().then((data) => {
@@ -25,6 +37,10 @@ export default function DogsHomePage() {
       setNextFetchUrl(data.next);
       setDogs(data.dogs);
       setIsLoadingDogs(false);
+    });
+
+    getDogsBreeds().then((data) => {
+      setDogsBreeds(data);
     });
   }, []);
 
@@ -48,6 +64,14 @@ export default function DogsHomePage() {
     setIsLoadingDogs(false);
   };
 
+  const handleBreedSelect = async (breed: string) => {
+    setIsLoadingDogs(true);
+    const dogsData = await getDogsByBreed(breed);
+    setDogs(dogsData.dogs);
+    setNextFetchUrl(dogsData.next);
+    setIsLoadingDogs(false);
+  };
+
   return (
     <main className='bg-stone-100 flex flex-col h-screen'>
       <div className="flex-none h-60 bg-[url('/dog-adopt-banner.jpg')] bg-no-repeat bg-cover bg-center">
@@ -63,47 +87,34 @@ export default function DogsHomePage() {
           Total Available {totalDogs}
         </div>
         <div className='flex gap-6 py-6 border-b-4'>
-          <Dropdown>
-            <DropdownTrigger>
-              <Button className='capitalize' color='primary' variant='bordered'>
-                Any Breed
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu
-              aria-label='Dropdown Variants'
-              color='default'
-              variant='bordered'
-            >
-              <DropdownItem key='new'>New file</DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-
-          <Dropdown>
-            <DropdownTrigger>
-              <Button className='capitalize' color='primary' variant='bordered'>
-                Any Location
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu
-              aria-label='Dropdown Variants'
-              color='default'
-              variant='bordered'
-            >
-              <DropdownItem key='new'>New file</DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
+          <Select
+            className='max-w-xs'
+            label='Any Breed'
+            variant='bordered'
+            popoverProps={{ placement: "bottom" }}
+          >
+            {dogsBreeds.map((breed) => (
+              <SelectItem
+                key={breed}
+                className='text-stone-700'
+                onPress={() => handleBreedSelect(breed)}
+              >
+                {breed}
+              </SelectItem>
+            ))}
+          </Select>
         </div>
 
         <div className='flex gap-6 py-6 text-stone-700'>
           Sort by:
-          <button onClick={() => sortDogsList("age", "desc")}>Oldest</button>
-          <button onClick={() => sortDogsList("age", "asc")}>Youngest</button>
-          <button onClick={() => sortDogsList("breed", "asc")}>
-            Breed(a-z)
-          </button>
-          <button onClick={() => sortDogsList("breed", "desc")}>
-            Breed(z-a)
-          </button>
+          {SORT_TYPES.map((sortType) => (
+            <button
+              key={sortType.name}
+              onClick={() => sortDogsList(sortType.field, sortType.order)}
+            >
+              {sortType.name}
+            </button>
+          ))}
         </div>
 
         <div className='grid grid-cols-5 w-full gap-10'>

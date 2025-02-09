@@ -48,7 +48,12 @@ export const getDogsWithSort = async ({
   return await getDogs(url);
 };
 
-const getDogsBreeds = async () => {
+export const getDogsByBreed = async (breed: string) => {
+  const url = `${BASE_URL}/dogs/search?breeds=${breed}`;
+  return await getDogs(url);
+};
+
+export const getDogsBreeds = async () => {
   const res = await fetch(`${BASE_URL}/dogs/breeds`, {
     method: "GET",
     headers: {
