@@ -64,4 +64,28 @@ export const getDogsBreeds = async () => {
   return await res.json();
 };
 
-const searchDogs = () => {};
+export const matchDogs = async (dogsIds: string[]) => {
+  const dogRes = await fetch(`${BASE_URL}/dogs/match`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(dogsIds),
+    credentials: "include"
+  });
+
+  const matchDog: { match: string } = await dogRes.json();
+
+  const dogsRes = await fetch(`${BASE_URL}/dogs`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify([matchDog.match]),
+    credentials: "include"
+  });
+
+  const dog: Dog[] = await dogsRes.json();
+
+  return dog;
+};

@@ -8,7 +8,8 @@ import {
   getDogs,
   getDogsBreeds,
   getDogsByBreed,
-  getDogsWithSort
+  getDogsWithSort,
+  matchDogs
 } from "@/apiCalls";
 
 const SORT_TYPES: {
@@ -30,6 +31,7 @@ export default function DogsHomePage() {
   const [isLoadingDogs, setIsLoadingDogs] = useState(true);
   const [nextFetchUrl, setNextFetchUrl] = useState("");
   const [dogsBreeds, setDogsBreeds] = useState<string[]>([]);
+  const [selectedDogsIds, setSelectedDogsIds] = useState<string[]>([]);
 
   useEffect(() => {
     getDogsWithSort().then((data) => {
@@ -45,7 +47,6 @@ export default function DogsHomePage() {
   }, []);
 
   const getNextPage = async () => {
-    console.log(nextFetchUrl);
     setIsLoadingDogs(true);
     const dogsData = await getDogs(nextFetchUrl);
     setDogs(dogsData.dogs);
@@ -69,6 +70,15 @@ export default function DogsHomePage() {
     const dogsData = await getDogsByBreed(breed);
     setDogs(dogsData.dogs);
     setNextFetchUrl(dogsData.next);
+    setTotalDogs(dogsData.total);
+    setIsLoadingDogs(false);
+  };
+
+  const findMatch = async () => {
+    setIsLoadingDogs(true);
+    const matchedDog = await matchDogs(selectedDogsIds);
+    setDogs(matchedDog);
+    setTotalDogs(1);
     setIsLoadingDogs(false);
   };
 
@@ -86,7 +96,7 @@ export default function DogsHomePage() {
         <div className='h-20 p-8 border-b-4 text-center text-stone-700'>
           Total Available {totalDogs}
         </div>
-        <div className='flex gap-6 py-6 border-b-4'>
+        <div className='flex gap-6 py-6 border-b-4 items-center'>
           <Select
             className='max-w-xs'
             label='Any Breed'
@@ -103,6 +113,15 @@ export default function DogsHomePage() {
               </SelectItem>
             ))}
           </Select>
+
+          <Button
+            size='lg'
+            className='bg-gradient-to-tr from-sky-500 to-yellow-500 text-white shadow-lg text-xl'
+            isDisabled={selectedDogsIds.length < 1}
+            onPress={findMatch}
+          >
+            Ready to match
+          </Button>
         </div>
 
         <div className='flex gap-6 py-6 text-stone-700'>
@@ -119,7 +138,13 @@ export default function DogsHomePage() {
 
         <div className='grid grid-cols-5 w-full gap-10'>
           {dogs.map((dog) => (
-            <div key={dog.id} className='text-stone-700 border-4'>
+            <div
+              key={dog.id}
+              className='text-stone-700 border-4 hover:cursor-pointer'
+              onClick={() => {
+                setSelectedDogsIds((prev) => [...prev, dog.id]);
+              }}
+            >
               <div
                 className={`w-full h-40 bg-no-repeat bg-cover bg-center`}
                 style={{ backgroundImage: `url('${dog.img}')` }}
@@ -135,7 +160,11 @@ export default function DogsHomePage() {
         </div>
 
         <div className='flex justify-center p-6'>
-          <Button color='primary' onPress={getNextPage}>
+          <Button
+            className='bg-gradient-to-tr from-sky-500 to-yellow-500 text-white shadow-lg'
+            onPress={getNextPage}
+            isDisabled={dogs.length < 1}
+          >
             Next
           </Button>
         </div>

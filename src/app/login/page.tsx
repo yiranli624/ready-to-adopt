@@ -36,12 +36,11 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className='flex-1 flex flex-col gap-4 justify-center items-center'>
+      <div className='flex-1 flex flex-col gap-4 justify-center items-center text-slate-700 text-xl'>
         <p>Please enter your name and email address to get started!</p>
         <Form
-          className='bg-slate-200 shadow-lg w-full max-w-xs flex flex-col gap-4'
+          className='bg-slate-200 rounded shadow-lg w-full max-w-xs px-10 py-6 flex flex-col gap-4'
           validationBehavior='native'
-          // onReset={() => setAction("reset")}
           onSubmit={(e) => {
             handleSubmit(e);
           }}
@@ -50,9 +49,7 @@ export default function LoginPage() {
             isRequired
             errorMessage='Please enter a valid name'
             label='Name'
-            labelPlacement='outside'
             name='name'
-            placeholder='Jane'
             type='text'
             size='lg'
           />
@@ -60,13 +57,12 @@ export default function LoginPage() {
             isRequired
             errorMessage='Please enter a valid email'
             label='Email'
-            labelPlacement='outside'
             name='email'
-            placeholder='jane@fetchrewards.com'
             type='email'
+            size='lg'
           />
 
-          <div className='flex gap-2'>
+          <div className='w-full flex gap-2 justify-around'>
             <Button
               type='submit'
               className='bg-gradient-to-tr from-pink-500 to-yellow-500 text-white shadow-lg'
@@ -74,7 +70,7 @@ export default function LoginPage() {
             >
               Submit
             </Button>
-            <Button color='secondary' type='reset' variant='flat'>
+            <Button color='default' type='reset' variant='flat'>
               Reset
             </Button>
           </div>
