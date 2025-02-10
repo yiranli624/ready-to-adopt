@@ -15,7 +15,8 @@
     "framer-motion": "^12.4.1",
     "next": "15.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "vercel": "^41.0.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

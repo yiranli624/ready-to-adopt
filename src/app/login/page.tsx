@@ -2,7 +2,7 @@
 import { Input } from "@heroui/input";
 import { Button, Form } from "@heroui/react";
 import { redirect } from "next/navigation";
-import React, { useState } from "react";
+import React from "react";
 
 export default function LoginPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
